@@ -1,0 +1,35 @@
+// memory data file (do not edit the following line - required for mem load use)
+// instance=/ram/ram
+// format=mti addressradix=h dataradix=d version=1.0 wordsperline=2
+ 0:    77    22
+ 2:    3    4
+ 4:    5    6
+ 6:    7    8
+ 8:    9   10
+ a:   11   12
+ c:   13   14
+ e:   15   16
+10:   17   18
+12:   19   20
+14:   21   22
+16:   23   24
+18:   25   26
+1a:   27   28
+1c:   29   30
+1e:   31   32
+20:   33   34
+22:   35   36
+24:   37   38
+26:   39   40
+28:   41   42
+2a:   43   44
+2c:   45   46
+2e:   47   48
+30:   49   50
+32:   51   52
+34:   53   54
+36:   55   56
+38:   57   58
+3a:   59   60
+3c:   61   62
+3e:   63   64
