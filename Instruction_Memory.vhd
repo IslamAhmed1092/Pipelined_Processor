@@ -5,9 +5,7 @@ USE IEEE.numeric_std.all;
 ENTITY Instruction_Memory IS
 	PORT(
 		clk : IN std_logic;
-		writeEnable  : IN std_logic;
 		address : IN  std_logic_vector(19 DOWNTO 0); 
-		datain  : IN  std_logic_vector(15 DOWNTO 0);
 		dataout : OUT std_logic_vector(31 DOWNTO 0);
 		resetAddr : OUT std_logic_vector(31 DOWNTO 0));
 
@@ -20,14 +18,6 @@ ARCHITECTURE Instruction_Memory_Arch OF Instruction_Memory IS
 	SIGNAL ram : ram_type ;
 	
 	BEGIN
-		PROCESS(clk) IS
-			BEGIN
-				IF rising_edge(clk) THEN  
-					IF writeEnable = '1' THEN
-						ram(to_integer(unsigned(address))) <= datain;
-					END IF;
-				END IF;
-		END PROCESS;
 		dataout(31 DOWNTO 16)  <= ram(to_integer(unsigned(address)));
 		dataout(15 DOWNTO 0)  <= ram(to_integer(unsigned(address)) + 1);
 		
