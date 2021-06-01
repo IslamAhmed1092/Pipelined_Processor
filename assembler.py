@@ -1,5 +1,7 @@
 import sys
 
+ram = [0]*2048
+
 instructions = {
     "MOV": {'code': '0000', 'operands': '2'}, "ADD": {'code': '0001', 'operands': '2'}, "SUB": {'code': '0010', 'operands': '2'},
     "AND": {'code': '0011', 'operands': '2'}, "OR": {'code': '0100', 'operands': '2'}, "IADD": {'code': '0101', 'operands': '2'},
@@ -11,8 +13,8 @@ instructions = {
 
     "NOP": {'code': '0000', 'operands': '0'}, "SETC": {'code': '0001', 'operands': '0'}, "CLRC": {'code': '0010', 'operands': '0'},
 
-    "PUSH": {'code': '0000', 'operands': '1'}, "POP": {'code': '0001', 'operands': '1'}, "LDM": {'code': '0010', 'operands': '2'},
-    "LDD": {'code': '0011', 'operands': '2'}, "STD": {'code': '0100', 'operands': '2'}
+    "PUSH": {'code': '0000', 'operands': '3'}, "POP": {'code': '0001', 'operands': '3'}, "LDM": {'code': '0010', 'operands': '3'},
+    "LDD": {'code': '0011', 'operands': '3'}, "STD": {'code': '0100', 'operands': '3'}
 }
 
 registers = {
@@ -27,9 +29,22 @@ registers = {
 }
 
 
+def encode_hex(operand):
+    # code = ''
+    # operand = int(operand)
+    # if operand < 0:
+    #     code = bin(operand % (1 << 16))[2:]
+    # else:
+    #     code = '0'*(16-len(bin(operand)[2:])) + bin(operand)[2:]
+
+    return bin(int(operand, 16))[2:].zfill(16)
+
+
 def cleanup(testcase):
     lines = []
     org_location = False
+    location = 0
+    inst_address = 0
     # Deletes all the comments, empty lines, and ORG instructions
     for line in testcase:
         if(line == "\n"):
@@ -37,14 +52,19 @@ def cleanup(testcase):
         if(line[0] == "#"):
             continue
         if(line[0] == "."):
+            location = int(line.split("#")[0].rstrip().split(" ")[1], 16)
             org_location = True
             continue
         if(org_location):
+            org_location = False
             if(line.rstrip("\n").isnumeric()):
-                continue
-        lines.append(line.split("#")[0].rstrip().upper())
+                ram[location] = encode_hex(line.rstrip("\n"))
+            else:
+                inst_address = location
+            continue
+        lines.append(' '.join(line.split("#")[0].rstrip().upper().split()))
 
-    return lines
+    return lines, inst_address
 
 
 def process_nooperand(instruction):
@@ -61,17 +81,6 @@ def process_oneoperand(instruction):
     return code
 
 
-def encode_decimal(operand):
-    code = ''
-    operand = int(operand)
-    if operand < 0:
-        code = bin(operand % (1 << 16))[2:]
-    else:
-        code = '0'*(16-len(bin(operand)[2:])) + bin(operand)[2:]
-
-    return code
-
-
 def process_twooperand(instruction):
     code = "100"
     inst, regs = instruction.split(" ")
@@ -84,7 +93,7 @@ def process_twooperand(instruction):
         code += "000"
         return code, ""
     else:
-        reg2 = encode_decimal(reg2)
+        reg2 = encode_hex(reg2)
         if opcode == "0101":
             code += "000" + registers[reg1] + reg2
         else:
@@ -107,23 +116,43 @@ def process_memory(instruction):
     reg1, reg2 = regs.split(",")
 
     if opcode == "0010":
-        code += "000" + registers[reg1] + encode_decimal(reg2) + "000"
+        code += "000" + registers[reg1] + encode_hex(reg2) + "000"
 
     if opcode == "0011" or opcode == "0100":
         code += registers[reg2.split("(")[1][:-1]] + \
-            registers[reg1] + encode_decimal(reg2.split("(")[0]) + "000"
+            registers[reg1] + encode_hex(reg2.split("(")[0]) + "000"
 
     return code[:16], code[16:]
 
-
-# print(process_memory("STD R2,200(R5)"))
 
 testcase_filename = "Memory.asm"
 if(len(sys.argv) >= 2):
     testcase_filename = sys.argv[1]
 
 testcase = open(testcase_filename)
-lines = cleanup(testcase)
+lines, inst_address = cleanup(testcase)
 
-# print(len(lines))
-# print(lines)
+for line in lines:
+    inst = line.split(" ")[0]
+    if inst in instructions:
+        if instructions[inst]["operands"] == "0":
+            code = process_nooperand(line)
+            ram[inst_address] = code
+        if instructions[inst]["operands"] == "1":
+            code = process_oneoperand(line)
+            ram[inst_address] = code
+        if instructions[inst]["operands"] == "2":
+            first_word, second_word = process_twooperand(line)
+            ram[inst_address] = first_word
+            if second_word != "":
+                inst_address = inst_address + 1
+                ram[inst_address] = second_word
+        if instructions[inst]["operands"] == "3":
+            first_word, second_word = process_memory(line)
+            ram[inst_address] = first_word
+            if second_word != "":
+                inst_address = inst_address + 1
+                ram[inst_address] = second_word
+        inst_address = inst_address + 1
+
+print(ram)
