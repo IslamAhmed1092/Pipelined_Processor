@@ -59,9 +59,9 @@ def cleanup(testcase):
             org_location = False
             if(line.rstrip("\n").isnumeric()):
                 ram[location] = encode_hex(line.rstrip("\n"))
+                continue
             else:
                 inst_address = location
-            continue
         lines.append(' '.join(line.split("#")[0].rstrip().upper().split()))
 
     return lines, inst_address
@@ -92,14 +92,14 @@ def process_twooperand(instruction):
         code += registers[reg1] + registers[reg2]
         code += "000"
         return code, ""
-    else:
-        reg2 = encode_hex(reg2)
-        if opcode == "0101":
-            code += "000" + registers[reg1] + reg2
-        else:
-            code += registers[reg1] + "000" + reg2
-        code += "000"
 
+    if opcode == "0110" or opcode == "0111":
+        code += registers[reg1] + bin(int(reg2, 16))[2:].zfill(5) + "0"
+        return code, ""
+
+    reg2 = encode_hex(reg2)
+    if opcode == "0101":
+        code += "000" + registers[reg1] + reg2 + "000"
         return code[:16], code[16:]
 
 
@@ -155,4 +155,15 @@ for line in lines:
                 ram[inst_address] = second_word
         inst_address = inst_address + 1
 
-print(ram)
+output_ram = open(testcase_filename.split(".")[0]+".mem", "+w")
+
+output_ram.write("// memory data file (do not edit the following line - required for mem load use)\n// instance=/instruction_memory/ram\n// format=mti addressradix=h dataradix=b version=1.0 wordsperline=1\n")
+
+fmt = "%3s"
+for i, word in enumerate(ram):
+    line_number = fmt % (hex(i)[2:])
+    if word == 0:
+        output_ram.write(line_number+": 0000000000000000\n")
+    else:
+        output_ram.write(line_number+": "+word+"\n")
+# print(ram)
