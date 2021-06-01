@@ -15,3 +15,41 @@ instructions = {
     "LDD": {'code': '0011', 'operands': '2'}, "STD": {'code': '0100', 'operands': '2'}
 }
 
+registers = {
+    "R0": "000",
+    "R1": "001",
+    "R2": "010",
+    "R3": "011",
+    "R4": "100",
+    "R5": "101",
+    "R6": "110",
+    "R7": "111"
+}
+
+
+def cleanup(testcase):
+    lines = []
+    org_location = False
+    # Deletes all the comments, empty lines, and ORG instructions
+    for line in testcase:
+        if(line == "\n"):
+            continue
+        if(line[0] == "#"):
+            continue
+        if(line[0] == "."):
+            org_location = True
+            continue
+        if(org_location):
+            if(line.rstrip("\n").isnumeric()):
+                continue
+        lines.append(line.split("#")[0].rstrip().upper())
+
+    return lines
+
+
+testcase_filename = "OneOperand.asm"
+testcase = open(testcase_filename)
+lines = cleanup(testcase)
+
+print(len(lines))
+print(lines)
