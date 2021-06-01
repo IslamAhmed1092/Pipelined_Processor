@@ -47,9 +47,83 @@ def cleanup(testcase):
     return lines
 
 
-testcase_filename = "OneOperand.asm"
+def process_nooperand(instruction):
+    return "000" + instructions[instruction]['code'] + '0'*9
+
+
+def process_oneoperand(instruction):
+    code = "010"
+    inst, reg = instruction.split(" ")
+    code += instructions[inst]['code']
+    code += "000"  # To be determined
+    code += registers[reg]
+    code += "000"
+    return code
+
+
+def encode_decimal(operand):
+    code = ''
+    operand = int(operand)
+    if operand < 0:
+        code = bin(operand % (1 << 16))[2:]
+    else:
+        code = '0'*(16-len(bin(operand)[2:])) + bin(operand)[2:]
+
+    return code
+
+
+def process_twooperand(instruction):
+    code = "100"
+    inst, regs = instruction.split(" ")
+    reg1, reg2 = regs.split(",")
+    opcode = instructions[inst]["code"]
+    code += opcode
+
+    if opcode <= "0100":
+        code += registers[reg1] + registers[reg2]
+        code += "000"
+        return code, ""
+    else:
+        reg2 = encode_decimal(reg2)
+        if opcode == "0101":
+            code += "000" + registers[reg1] + reg2
+        else:
+            code += registers[reg1] + "000" + reg2
+        code += "000"
+
+        return code[:16], code[16:]
+
+
+def process_memory(instruction):
+    code = "001"
+    inst, regs = instruction.split(" ")
+    opcode = instructions[inst]["code"]
+    code += opcode
+
+    if opcode == "0000" or opcode == "0001":
+        code += "000" + registers[regs] + "000"
+        return code, ""
+
+    reg1, reg2 = regs.split(",")
+
+    if opcode == "0010":
+        code += "000" + registers[reg1] + encode_decimal(reg2) + "000"
+
+    if opcode == "0011" or opcode == "0100":
+        code += registers[reg2.split("(")[1][:-1]] + \
+            registers[reg1] + encode_decimal(reg2.split("(")[0]) + "000"
+
+    return code[:16], code[16:]
+
+
+# print(process_memory("STD R2,200(R5)"))
+
+testcase_filename = "Memory.asm"
+if(len(sys.argv) >= 2):
+    testcase_filename = sys.argv[1]
+
 testcase = open(testcase_filename)
 lines = cleanup(testcase)
 
-print(len(lines))
-print(lines)
+# print(len(lines))
+# print(lines)
