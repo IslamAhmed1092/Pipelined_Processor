@@ -9,7 +9,24 @@ entity ALU is
 		ALU_OUT: out std_logic_vector(31 downto 0));
 end ALU;
 
-architecture arch of AlU IS 
-begin 
-		
+architecture arch of AlU IS
+
+component add_operations IS 
+    	Port(
+        	A, B : in std_logic_vector(31 downto 0);  
+        	operation:in std_logic_vector(4 downto 0);
+        	S: out std_logic_vector(31 downto 0);
+        	cout: out std_logic);
+END component;
+  
+component shift_rot IS 
+	PORT( 	A, B : in std_logic_vector(31 downto 0);  
+        operation:in std_logic_vector(4 downto 0);
+	cin: in std_logic;
+        S: out std_logic_vector(31 downto 0);
+        cout: out std_logic);
+END component;
+
+
+begin  
 end arch; 
