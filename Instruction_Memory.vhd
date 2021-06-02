@@ -17,7 +17,7 @@ ARCHITECTURE Instruction_Memory_Arch OF Instruction_Memory IS
 
 	SIGNAL ram : ram_type ;
 	
-	BEGIN
+BEGIN
 		dataout(31 DOWNTO 16)  <= ram(to_integer(unsigned(address)));
 		dataout(15 DOWNTO 0)  <= ram(to_integer(unsigned(address)) + 1);
 		
