@@ -53,6 +53,8 @@ def cleanup(testcase):
             continue
         if(line[0] == "."):
             location = int(line.split("#")[0].rstrip().split(" ")[1], 16)
+            if location == 0:
+                location += 1
             org_location = True
             continue
         if(org_location):
