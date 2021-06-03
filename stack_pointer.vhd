@@ -10,6 +10,7 @@ end stack_pointer;
 
 architecture stack_pointer_Arch of stack_pointer is
 begin 
+
     process (clk,rst)
     begin 
     if rst = '1' then 

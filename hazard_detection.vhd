@@ -13,7 +13,8 @@ ENTITY hazard_detection IS
 		ID_EX_Rdst : in std_logic_vector(2 downto 0);
 
 		PC_Disable : out std_logic;
-		IF_ID_Disable : out std_logic
+		IF_ID_Disable : out std_logic;
+		clear_IDEX_signals : out std_logic
 	);
 
 END ENTITY hazard_detection;
@@ -28,5 +29,5 @@ BEGIN
 
 	PC_Disable <= stall;
 	IF_ID_Disable <= stall;
-
+	clear_IDEX_signals <= stall;
 END hazard_detection_arch;

@@ -34,7 +34,7 @@ END component;
 
 component decode_stage IS
 	PORT(
-		clk, reset, writeBackNow: IN std_logic;
+		clk, reset, writeBackNow, clearSignals: IN std_logic;
 		instruction, in_port: IN std_logic_vector(31 downto 0);
 		writeReg : IN std_logic_vector(2 downto 0);
 		writeData : IN std_logic_vector (31 downto 0);
@@ -58,7 +58,7 @@ component execution_stage IS
 
 		ALU_Result: OUT std_logic_vector(31 downto 0);
 		RdstData_out: OUT std_logic_vector(31 downto 0)
-		
+
 	);
 end component;
 
@@ -81,12 +81,49 @@ component writeback_stage is Port(
 );
 end component; 
 
+component forwarding_unit IS
+	PORT(
+		ID_EX_RdstRead : in std_logic;
+		ID_EX_HasRsrc : in std_logic;
+		ID_EX_SrcImm : in std_logic;
+		ID_EX_Rdst : in std_logic_vector(2 downto 0);
+		ID_EX_Rsrc : in std_logic_vector(2 downto 0);
+
+		EX_MEM_WB : in std_logic;
+		EX_MEM_DstReg : in std_logic_vector(2 downto 0);
+
+		MEM_WB_WB : in std_logic;
+		MEM_WB_DstReg : in std_logic_vector(2 downto 0);
+
+		WBdstA : out std_logic;
+		MEMdstA : out std_logic;
+		WBdstB : out std_logic;
+		MEMdstB : out std_logic
+	);
+END component;
+
+component hazard_detection IS
+	PORT(
+		IF_ID_RdstRead : in std_logic;
+		IF_ID_Rsrc : in std_logic_vector(2 downto 0);
+		IF_ID_Rdst : in std_logic_vector(2 downto 0);
+
+		ID_EX_MemRead: in std_logic;
+		ID_EX_Rdst : in std_logic_vector(2 downto 0);
+
+		PC_Disable : out std_logic;
+		IF_ID_Disable : out std_logic;
+		clear_IDEX_signals : out std_logic
+	);
+
+END component;
+
 -- Fetch Stage
 signal fetch_instruction_out: std_logic_vector(31 downto 0);
 
 signal IFID_INPUT: std_logic_vector(63 downto 0);
 signal IFID_OUT: std_logic_vector(63 downto 0);
-
+Signal IFID_enable : std_logic ;
 
 
 -- Decode Stage
@@ -171,16 +208,24 @@ constant MEMWB_DstNum_END_IDX 						: integer := 102;
 
 -- write back 
 signal WRITE_BACK_DATA: std_logic_vector(31 downto 0); 
+
+-- forwarding unit
+
+SIGNAL FORWARDING_WBdstA, FORWARDING_MEMdstA, FORWARDING_WBdstB, FORWARDING_MEMdstB : std_logic;
+
+-- data hazrd 
+SIGNAL PC_disable, clear_IDEX_Signals, IFID_disable : std_logic ;
 begin
 	-- fetch
-	fs: fetch_stage PORT MAP(clk, reset, '0', fetch_instruction_out);
-	IFID: reg GENERIC MAP (64) port map(clk, reset, '1', '1', IFID_INPUT, IFID_OUT);
+	fs: fetch_stage PORT MAP(clk, reset, PC_disable, fetch_instruction_out);
+	IFID: reg GENERIC MAP (64) port map(clk, reset, IFID_enable, '1', IFID_INPUT, IFID_OUT);
 	
+	IFID_enable <= not IFID_disable;
 	IFID_INPUT(63 downto 32) <= fetch_instruction_out;
 	IFID_INPUT(31 downto 0) <= in_port;
 	
 	-- decode
-	ds: decode_stage PORT MAP(clk, reset, MEMWB_OUT(MEMWB_writeBackNext_IDX), IFID_OUT(63 downto 32), IFID_OUT(31 downto 0),
+	ds: decode_stage PORT MAP(clk, reset, MEMWB_OUT(MEMWB_writeBackNext_IDX), clear_IDEX_Signals, IFID_OUT(63 downto 32), IFID_OUT(31 downto 0),
 	MEMWB_OUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX), WRITE_BACK_DATA, IFID_RdstRead, 
 	IFID_hasRsrc, IFID_Push, IFID_Pop, IFID_outPortEnable, IFID_writeBackNext, IFID_hasImm, 
 	IFID_SrcAndImm, IFID_memWrite, IFID_memRead, IFID_stdEnable, IFID_ALU_operation, IFID_imm,
@@ -213,7 +258,8 @@ begin
 	es: execution_stage PORT MAP(clk, reset, IDEX_OUT(IFID_ALU_operation_END_IDX downto IFID_ALU_operation_ST_IDX),
 	IDEX_OUT(IFID_SrcAndImm_IDX), IDEX_OUT(IFID_hasImm_IDX), IDEX_OUT(IFID_src_END_IDX downto IFID_src_ST_IDX),
 	IDEX_OUT(IFID_dst_END_IDX downto IFID_dst_ST_IDX), IDEX_OUT(IFID_imm_END_IDX downto IFID_imm_ST_IDX),
-	'0', '0', '0', '0', (others => '0'), (others => '0'),
+	FORWARDING_MEMdstA, FORWARDING_WBdstA, FORWARDING_MEMdstB, FORWARDING_WBdstB,
+	EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX), WRITE_BACK_DATA,
 	IDEX_ALU_RESULT, IDEX_RdstData_out);
 
 
@@ -257,5 +303,19 @@ begin
 	MEMWB_OUT(MEMWB_MEM_OUT_END_IDX downto MEMWB_MEM_OUT_ST_IDX),
 	MEMWB_OUT(MEMWB_ALU_Result_END_IDX downto MEMWB_ALU_Result_ST_IDX), WRITE_BACK_DATA , SP_INPUT);
 	
+
+	-- data forwarding
+	df : forwarding_unit PORT MAP (IDEX_OUT(IFID_RdstRead_IDX), IDEX_OUT(IFID_hasRsrc_IDX), IDEX_OUT(IFID_SrcAndImm_IDX),
+		IDEX_OUT(IFID_DstNum_END_IDX downto IFID_DstNum_ST_IDX), IDEX_OUT(IFID_SrcNum_END_IDX downto IFID_SrcNum_ST_IDX),
+		EXMEM_OUT(EXMEM_writeBackNext_IDX), EXMEM_OUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX),
+		 MEMWB_OUT(MEMWB_writeBackNext_IDX), MEMWB_OUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX),
+		 FORWARDING_WBdstA, FORWARDING_MEMdstA, FORWARDING_WBdstB, FORWARDING_MEMdstB);
+
+	-- hazard detection 		
+	hd : hazard_detection PORT MAP (IFID_RdstRead, IFID_SrcNum, IFID_DstNum, IDEX_OUT(IFID_memRead_IDX),
+		IDEX_OUT(IFID_DstNum_END_IDX downto IFID_DstNum_ST_IDX), PC_disable, IFID_disable, clear_IDEX_Signals );
+
+
+
 
 end processor_arch;

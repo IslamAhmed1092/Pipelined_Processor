@@ -30,4 +30,7 @@ add wave -position end  sim:/processor/wb/WB_data
 add wave -position end  sim:/processor/WRITE_BACK_DATA
 add wave -position end  sim:/processor/SP_INPUT
 add wave -position end  sim:/processor/wb/mem_out
-add wave -position 31  sim:/processor/wb/ALU_result*/
+add wave -position 31  sim:/processor/wb/ALU_result
+add wave -position 29  sim:/processor/ds/writeReg
+add wave -position 30  sim:/processor/ds/writeData
+add wave -position 17  sim:/processor/es/CCR_OUT
