@@ -26,12 +26,6 @@ port (clk, rst ,en, edge :IN std_logic;
         q:out std_logic_vector(n-1 downto 0 )); 
 END component; 
 
-component stack_pointer is 
-generic (n:INTEGER:= 32); 
-port (clk, rst ,en, edge :IN std_logic; 
-        d:In std_logic_vector(n-1 downto 0); 
-        q:out std_logic_vector(n-1 downto 0 )); 
-END component; 
 
 component decode_stage IS
 	PORT(
@@ -53,8 +47,8 @@ component execution_stage IS
 		ALU_Operation: IN std_logic_vector(4 downto 0);
 		SrcAndImm_in, HasImmediate_in: IN std_logic;
 		RsrcData_in, RdstData_in, Immediate_in: IN std_logic_vector(31 downto 0);
-		MEMdstA, WBdstA: IN std_logic;
-		MEMdstB, WBdstB: IN std_logic;
+		MEMdst, WBdst: IN std_logic;
+		MEMsrc, WBsrc: IN std_logic;
 		MEMWBData, WBWBData: IN std_logic_vector(31 downto 0);
 
 		ALU_Result: OUT std_logic_vector(31 downto 0);
@@ -65,20 +59,18 @@ end component;
 
 component memory_stage IS
 	PORT(
-		clk, pop, push, Memory_Write, Memory_Read, STD_Enable: IN std_logic;
+		clk, reset, pop, push, Memory_Write, Memory_Read, STD_Enable: IN std_logic;
 		Rsrc_Data: in std_logic_vector(31 DOWNTO 0);
 		Rdst_Data: in std_logic_vector(31 DOWNTO 0);
 		ALU_Result: in std_logic_vector(31 DOWNTO 0);
-		SP_Addr_In: in std_logic_vector(31 DOWNTO 0);
-		SP_Addr_Out: out std_logic_vector(31 DOWNTO 0);
 		dataout : out std_logic_vector(31 DOWNTO 0)
 	);
 end component;
 
 component writeback_stage is Port(
-    push , memRead : in std_logic; 
-    SP_address, mem_out, ALU_result : in std_logic_vector(31 downto 0 ); 
-    WB_data , SP_data: out std_logic_vector(31 downto 0)  
+    memRead : in std_logic; 
+    mem_out, ALU_result : in std_logic_vector(31 downto 0 ); 
+    WB_data: out std_logic_vector(31 downto 0)  
 );
 end component; 
 
@@ -96,10 +88,10 @@ component forwarding_unit IS
 		MEM_WB_WB : in std_logic;
 		MEM_WB_DstReg : in std_logic_vector(2 downto 0);
 
-		WBdstA : out std_logic;
-		MEMdstA : out std_logic;
-		WBdstB : out std_logic;
-		MEMdstB : out std_logic
+		WBdst : out std_logic;
+		MEMdst : out std_logic;
+		WBsrc : out std_logic;
+		MEMsrc : out std_logic
 	);
 END component;
 
@@ -185,10 +177,8 @@ constant EXMEM_DstNum_ST_IDX 				: integer := 103;
 constant EXMEM_DstNum_END_IDX 				: integer := 105;
 
 -- memory
-signal SP_INPUT: std_logic_vector(31 downto 0);
-signal SP_OUT: std_logic_vector(31 downto 0);
 
-signal EXMEM_SP: std_logic_vector(31 downto 0);
+
 signal EXMEM_MEM_OUT: std_logic_vector(31 downto 0);
 
 signal MEMWB_INPUT: std_logic_vector(102 downto 0);
@@ -197,9 +187,6 @@ signal MEMWB_OUT: std_logic_vector(102 downto 0);
 constant MEMWB_outPortEnable_IDX 					: integer := 0;
 constant MEMWB_memRead_IDX 							: integer := 1;
 constant MEMWB_writeBackNext_IDX 					: integer := 2;
-constant MEMWB_Push_IDX 							: integer := 3;
-constant MEMWB_SP_ST_IDX							: integer := 4;
-constant MEMWB_SP_END_IDX							: integer := 35;
 constant MEMWB_MEM_OUT_ST_IDX 						: integer := 36;
 constant MEMWB_MEM_OUT_END_IDX 						: integer := 67;
 constant MEMWB_ALU_Result_ST_IDX 					: integer := 68; 
@@ -212,7 +199,7 @@ signal WRITE_BACK_DATA: std_logic_vector(31 downto 0);
 
 -- forwarding unit
 
-SIGNAL FORWARDING_WBdstA, FORWARDING_MEMdstA, FORWARDING_WBdstB, FORWARDING_MEMdstB : std_logic;
+SIGNAL FORWARDING_WBdst, FORWARDING_MEMdst, FORWARDING_WBsrc, FORWARDING_MEMsrc : std_logic;
 
 -- data hazrd 
 SIGNAL PC_disable, clear_IDEX_Signals, IFID_disable : std_logic ;
@@ -259,7 +246,7 @@ begin
 	es: execution_stage PORT MAP(clk, reset, IDEX_OUT(IFID_ALU_operation_END_IDX downto IFID_ALU_operation_ST_IDX),
 	IDEX_OUT(IFID_SrcAndImm_IDX), IDEX_OUT(IFID_hasImm_IDX), IDEX_OUT(IFID_src_END_IDX downto IFID_src_ST_IDX),
 	IDEX_OUT(IFID_dst_END_IDX downto IFID_dst_ST_IDX), IDEX_OUT(IFID_imm_END_IDX downto IFID_imm_ST_IDX),
-	FORWARDING_MEMdstA, FORWARDING_WBdstA, FORWARDING_MEMdstB, FORWARDING_WBdstB,
+	FORWARDING_MEMdst, FORWARDING_WBdst, FORWARDING_MEMsrc, FORWARDING_WBsrc,
 	EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX), WRITE_BACK_DATA,
 	IDEX_ALU_RESULT, IDEX_RdstData_out);
 
@@ -279,30 +266,25 @@ begin
 	EXMEM_INPUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX) <= IDEX_OUT(IFID_DstNum_END_IDX downto IFID_DstNum_ST_IDX);
 
 	-- memory
-	ms: memory_stage PORT MAP(clk, EXMEM_OUT(EXMEM_Pop_IDX), EXMEM_OUT(EXMEM_Push_IDX), EXMEM_OUT(EXMEM_memWrite_IDX),
+	ms: memory_stage PORT MAP(clk, reset, EXMEM_OUT(EXMEM_Pop_IDX), EXMEM_OUT(EXMEM_Push_IDX), EXMEM_OUT(EXMEM_memWrite_IDX),
 	EXMEM_OUT(EXMEM_memRead_IDX), EXMEM_OUT(EXMEM_stdEnable_IDX), EXMEM_OUT(EXMEM_Src_END_IDX downto EXMEM_Src_ST_IDX),
-	EXMEM_OUT(EXMEM_Dst_END_IDX downto EXMEM_Dst_ST_IDX), EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX),
-	SP_OUT, EXMEM_SP, EXMEM_MEM_OUT);
+	EXMEM_OUT(EXMEM_Dst_END_IDX downto EXMEM_Dst_ST_IDX), EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX), EXMEM_MEM_OUT);
 
 	
-	SP: stack_pointer GENERIC MAP (32) port map(clk, reset, '1', '0', SP_INPUT, SP_OUT);
 	
 	MEMWB: reg GENERIC MAP (103) port map(clk, reset, '1', '1', MEMWB_INPUT, MEMWB_OUT);
 
 	MEMWB_INPUT(MEMWB_outPortEnable_IDX) <= EXMEM_OUT(EXMEM_outPortEnable_IDX);
 	MEMWB_INPUT(MEMWB_memRead_IDX) <= EXMEM_OUT(EXMEM_memRead_IDX);
 	MEMWB_INPUT(MEMWB_writeBackNext_IDX) <= EXMEM_OUT(EXMEM_writeBackNext_IDX);
-	MEMWB_INPUT(MEMWB_Push_IDX) <= EXMEM_OUT(EXMEM_Push_IDX);
-	MEMWB_INPUT(MEMWB_SP_END_IDX downto MEMWB_SP_ST_IDX) <= EXMEM_SP;
 	MEMWB_INPUT(MEMWB_MEM_OUT_END_IDX downto MEMWB_MEM_OUT_ST_IDX) <= EXMEM_MEM_OUT;
 	MEMWB_INPUT(MEMWB_ALU_Result_END_IDX downto MEMWB_ALU_Result_ST_IDX) <= EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX);
 	MEMWB_INPUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX) <= EXMEM_OUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX);
 
 	-- write back 
-	wb: writeback_stage port map (MEMWB_OUT(MEMWB_Push_IDX) , MEMWB_OUT(MEMWB_memRead_IDX),
-	MEMWB_OUT(MEMWB_SP_END_IDX downto MEMWB_SP_ST_IDX), 
+	wb: writeback_stage port map (MEMWB_OUT(MEMWB_memRead_IDX),
 	MEMWB_OUT(MEMWB_MEM_OUT_END_IDX downto MEMWB_MEM_OUT_ST_IDX),
-	MEMWB_OUT(MEMWB_ALU_Result_END_IDX downto MEMWB_ALU_Result_ST_IDX), WRITE_BACK_DATA , SP_INPUT);
+	MEMWB_OUT(MEMWB_ALU_Result_END_IDX downto MEMWB_ALU_Result_ST_IDX), WRITE_BACK_DATA);
 	
 
 	-- data forwarding
@@ -310,7 +292,7 @@ begin
 		IDEX_OUT(IFID_DstNum_END_IDX downto IFID_DstNum_ST_IDX), IDEX_OUT(IFID_SrcNum_END_IDX downto IFID_SrcNum_ST_IDX),
 		EXMEM_OUT(EXMEM_writeBackNext_IDX), EXMEM_OUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX),
 		 MEMWB_OUT(MEMWB_writeBackNext_IDX), MEMWB_OUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX),
-		 FORWARDING_WBdstA, FORWARDING_MEMdstA, FORWARDING_WBdstB, FORWARDING_MEMdstB);
+		 FORWARDING_WBdst, FORWARDING_MEMdst, FORWARDING_WBsrc, FORWARDING_MEMsrc);
 
 	-- hazard detection 		
 	hd : hazard_detection PORT MAP (IFID_RdstRead, IFID_SrcNum, IFID_DstNum, IDEX_OUT(IFID_memRead_IDX),

@@ -25,12 +25,22 @@ add wave -position end sim:/processor/es/Immediate_in
 add wave -position end  sim:/processor/es/ALU_Result
 add wave -position end  sim:/processor/es/CCR_OUT
 
-add wave -position end  sim:/processor/FORWARDING_WBdstA
-add wave -position end  sim:/processor/FORWARDING_MEMdstA
-add wave -position end  sim:/processor/FORWARDING_WBdstB
-add wave -position end  sim:/processor/FORWARDING_MEMdstB
+add wave -position end  sim:/processor/FORWARDING_WBdst
+add wave -position end  sim:/processor/FORWARDING_MEMdst
+add wave -position end  sim:/processor/FORWARDING_WBsrc
+add wave -position end  sim:/processor/FORWARDING_MEMsrc
 
 add wave -position end  sim:/processor/ms/ALU_Result
+add wave -position end  sim:/processor/ms/Rsrc_Data
+add wave -position end  sim:/processor/ms/Rdst_Data
+add wave -position end  sim:/processor/ms/SP_INPUT
+add wave -position end  sim:/processor/ms/SP_OUT
+add wave -position end  sim:/processor/ms/Memory_Write
+add wave -position end  sim:/processor/ms/Memory_Read
+add wave -position end  sim:/processor/ms/memory_in
+add wave -position end  sim:/processor/ms/memory_out
+add wave -position end  sim:/processor/ms/memory_addr
+
 
 add wave -position end  sim:/processor/wb/WB_data
 
@@ -44,18 +54,18 @@ add wave -position end  sim:/processor/ds/regFile/reg6_data
 add wave -position end  sim:/processor/ds/regFile/reg7_data
 
 
-mem load -i assembler/TwoOperand.mem /processor/fs/im/ram
+mem load -i assembler/Memory.mem /processor/fs/im/ram
 
 
 force -freeze sim:/processor/clk 0 0, 1 {50 ps} -r 100
 force -freeze sim:/processor/reset 1 0
 run
 force -freeze sim:/processor/reset 0 0
-force -freeze sim:/processor/in_port 16#5 0
-run
 force -freeze sim:/processor/in_port 16#19 0
+run 
+force -freeze sim:/processor/in_port 16#FFFF 0
 run
-force -freeze sim:/processor/in_port 16#FFFFFFFF 0
+force -freeze sim:/processor/in_port 16#F320 0
+run 500
+force -freeze sim:/processor/in_port 16#10 0
 run
-force -freeze sim:/processor/in_port 16#FFFFF320 0
-run 1400
