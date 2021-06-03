@@ -5,7 +5,8 @@ USE IEEE.numeric_std.all;
 entity processor is 
 	PORT(
 		clk, reset: IN std_logic;
-		in_port: IN std_logic_vector(31 downto 0)
+		in_port: IN std_logic_vector(31 downto 0);
+		out_port: OUT std_logic_vector(31 downto 0)
 	);
 end entity processor; 
 
@@ -314,6 +315,10 @@ begin
 	-- hazard detection 		
 	hd : hazard_detection PORT MAP (IFID_RdstRead, IFID_SrcNum, IFID_DstNum, IDEX_OUT(IFID_memRead_IDX),
 		IDEX_OUT(IFID_DstNum_END_IDX downto IFID_DstNum_ST_IDX), PC_disable, IFID_disable, clear_IDEX_Signals );
+
+	
+	outport: reg GENERIC MAP (32) port map(clk, reset, MEMWB_OUT(MEMWB_outPortEnable_IDX),
+	 	'0', WRITE_BACK_DATA, out_port);
 
 
 

@@ -44,7 +44,7 @@ begin
 	else shift_rot_s when OPERATION = "00110" or OPERATION = "00111" or OPERATION = "01101" or OPERATION = "01110";
 	
 	CCR_OUT(2) <= '1' when OPERATION = "01111"
-	else add_operations_cout when OPERATION = "00010" or OPERATION = "00011" or OPERATION = "01010"
+	else add_operations_cout when OPERATION = "00010" or OPERATION = "00011" or OPERATION = "01010" or OPERATION = "01011"
 	else shift_rot_cout when OPERATION = "00110" or OPERATION = "00111" or OPERATION = "01101" or OPERATION = "01110"
 	else '0' when OPERATION = "10000"
 	else CCR_IN(2);
