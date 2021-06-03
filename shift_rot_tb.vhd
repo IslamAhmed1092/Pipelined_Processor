@@ -85,7 +85,7 @@ ARCHITECTURE testbench_b OF shift_rot_tb IS
 				cin <= Cins(i);
 				operation <= ops(i);
 				WAIT FOR 100 ps;
-				ASSERT(S = Ss(i) and cout = Cs(i))
+				ASSERT(S = Ss(i) and cout = Couts(i))
 				REPORT  "Error"
 				SEVERITY ERROR;
 				

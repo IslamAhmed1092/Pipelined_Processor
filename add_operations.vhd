@@ -23,10 +23,11 @@ begin
 	u0: my_adder port map(Atemp , Btemp , cin , s , cout);
 	
 	Atemp <= not A when operation = "01100"		-- neg
+	else B when operation = "00011"
 	else A;
 
     	Btemp <= B when operation = "00010"		-- add
-	else not B when operation = "00011"		-- sub
+	else not A when operation = "00011"		-- sub
 	else (others => '1') when operation = "01011"	-- dec
     	else (others => '0');				-- inc, neg
     	cin <= '1' when operation = "00011" or operation = "01010" or operation = "01100" 	-- sub, inc, neg

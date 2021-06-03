@@ -70,7 +70,8 @@ BEGIN
 	SE : sign_extend PORT MAP (signals(6),instruction(21 downto 17) ,instruction(18 downto 3) , imm);
 
 	SrcRead <= instruction(24 downto 22);
-	DstRead <= instruction(21 downto 19);
+	DstRead <= instruction(21 downto 19) when signals(6) = '0'
+	else instruction(24 downto 22);
 
 	
 

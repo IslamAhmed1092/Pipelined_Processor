@@ -34,7 +34,7 @@ BEGIN
 			or (ID_EX_SrcImm = '1' and MEM_WB_WB = '1' and (ID_EX_Rsrc xnor MEM_WB_DstReg) = "111") 
 			else '0';
 
-	MEMdstB <= '1' when (ID_EX_HasRsrc = '1' and ID_EX_SrcImm = '0' and EX_MEM_WB = '1' and (ID_EX_Rdst xnor EX_MEM_DstReg) = "111")
+	MEMdstB <= '1' when (ID_EX_HasRsrc = '1' and ID_EX_SrcImm = '0' and EX_MEM_WB = '1' and (ID_EX_Rsrc xnor EX_MEM_DstReg) = "111")
 		else '0';
 
 	WBdstB <= '1' when (ID_EX_HasRsrc = '1' and ID_EX_SrcImm = '0' and MEM_WB_WB = '1' and (ID_EX_Rsrc xnor MEM_WB_DstReg) = "111")
