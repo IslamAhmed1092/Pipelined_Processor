@@ -40,6 +40,21 @@ component decode_stage IS
 	);
 end component;
 
+component execution_stage IS
+	PORT(
+		clk, reset: IN std_logic;
+		ALU_Operation: IN std_logic_vector(4 downto 0);
+		SrcAndImm_in, HasImmediate_in: IN std_logic;
+		RsrcData_in, RdstData_in, Immediate_in: IN std_logic_vector(31 downto 0);
+		MEMdstA, WBdstA: IN std_logic;
+		MEMdstB, WBdstB: IN std_logic;
+		MEMWBData, WBWBData: IN std_logic_vector(31 downto 0);
+
+		ALU_Result: OUT std_logic_vector(31 downto 0);
+		RdstData_out: OUT std_logic_vector(31 downto 0)
+		
+	);
+end component;
 
 -- Fetch Stage
 signal fetch_instruction_out: std_logic_vector(31 downto 0);
@@ -84,6 +99,29 @@ constant IFID_SrcNum_END_IDX 				: integer := 114;
 constant IFID_DstNum_ST_IDX 				: integer := 115; 
 constant IFID_DstNum_END_IDX 				: integer := 117;
 
+signal IDEX_ALU_RESULT: std_logic_vector(31 downto 0);
+signal IDEX_RdstData_out: std_logic_vector(31 downto 0);
+
+signal EXMEM_INPUT: std_logic_vector(105 downto 0);
+signal EXMEM_OUT: std_logic_vector(105 downto 0);
+
+constant EXMEM_Push_IDX 					: integer := 0;
+constant EXMEM_outPortEnable_IDX 			: integer := 1;
+constant EXMEM_Pop_IDX 						: integer := 2;
+constant EXMEM_writeBackNext_IDX 			: integer := 3;
+constant EXMEM_memWrite_IDX 				: integer := 4;
+constant EXMEM_memRead_IDX 					: integer := 5;
+constant EXMEM_stdEnable_IDX 				: integer := 6;
+constant EXMEM_Src_ST_IDX 					: integer := 7; 
+constant EXMEM_Src_END_IDX 					: integer := 38;
+constant EXMEM_ALU_Result_ST_IDX 			: integer := 39; 
+constant EXMEM_ALU_Result_END_IDX 			: integer := 70;
+constant EXMEM_Dst_ST_IDX 					: integer := 71; 
+constant EXMEM_Dst_END_IDX 					: integer := 102;
+constant EXMEM_DstNum_ST_IDX 				: integer := 103; 
+constant EXMEM_DstNum_END_IDX 				: integer := 105;
+
+
 begin
 	-- fetch
 	fs: fetch_stage PORT MAP(clk, reset, '0', fetch_instruction_out);
@@ -122,6 +160,26 @@ begin
 
 
 	-- execute
+	es: execution_stage PORT MAP(clk, reset, IDEX_OUT(IFID_ALU_operation_END_IDX downto IFID_ALU_operation_ST_IDX),
+	IDEX_OUT(IFID_SrcAndImm_IDX), IDEX_OUT(IFID_hasImm_IDX), IDEX_OUT(IFID_src_END_IDX downto IFID_src_ST_IDX),
+	IDEX_OUT(IFID_dst_END_IDX downto IFID_dst_ST_IDX), IDEX_OUT(IFID_imm_END_IDX downto IFID_imm_ST_IDX),
+	'0', '0', '0', '0', (others => '0'), (others => '0'),
+	IDEX_ALU_RESULT, IDEX_RdstData_out);
 
-	
+
+	EXMEM: reg GENERIC MAP (106) port map(clk, reset, '1', '1', EXMEM_INPUT, EXMEM_OUT);
+
+	EXMEM_INPUT(EXMEM_Push_IDX) <= IDEX_OUT(IFID_Push_IDX);
+	EXMEM_INPUT(EXMEM_outPortEnable_IDX) <= IDEX_OUT(IFID_outPortEnable_IDX);
+	EXMEM_INPUT(EXMEM_Pop_IDX) <= IDEX_OUT(IFID_Pop_IDX);
+	EXMEM_INPUT(EXMEM_writeBackNext_IDX) <= IDEX_OUT(IFID_writeBackNext_IDX);
+	EXMEM_INPUT(EXMEM_memWrite_IDX) <= IDEX_OUT(IFID_memWrite_IDX);
+	EXMEM_INPUT(EXMEM_memRead_IDX) <= IDEX_OUT(IFID_memRead_IDX);
+	EXMEM_INPUT(EXMEM_stdEnable_IDX) <= IDEX_OUT(IFID_stdEnable_IDX);
+	EXMEM_INPUT(EXMEM_Src_END_IDX downto EXMEM_Src_ST_IDX) <= IDEX_OUT(IFID_src_END_IDX downto IFID_src_ST_IDX);
+	EXMEM_INPUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX) <=  IDEX_ALU_RESULT;
+	EXMEM_INPUT(EXMEM_Dst_END_IDX downto EXMEM_Dst_ST_IDX) <= IDEX_RdstData_out;
+	EXMEM_INPUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX) <= IDEX_OUT(IFID_DstNum_END_IDX downto IFID_DstNum_ST_IDX);
+
+
 end processor_arch;
