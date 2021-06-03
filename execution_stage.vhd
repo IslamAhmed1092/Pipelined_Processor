@@ -45,7 +45,7 @@ signal A, B: std_logic_vector(31 downto 0);
 
 BEGIN
 	alu_com : ALU port map (A, B, CCR_OUT, ALU_Operation, ALU_CCR_OUT, ALU_Result);
-	CCR: reg GENERIC MAP (3) port map(clk, reset, '1', '0', ALU_CCR_OUT, CCR_OUT);
+	CCR: reg GENERIC MAP (3) port map(clk, reset, '1', '1', ALU_CCR_OUT, CCR_OUT);
 	
 	first_operand <= RdstData_in when SrcAndImm_in = '0'
 	else RsrcData_in;
