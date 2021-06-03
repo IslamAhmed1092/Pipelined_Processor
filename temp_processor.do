@@ -27,4 +27,7 @@ add wave -position end  sim:/processor/ms/memory_out
 add wave -position 14  sim:/processor/ms/memory_in
 add wave -position end  sim:/processor/wb/SP_data
 add wave -position end  sim:/processor/wb/WB_data 
-add wave -position end  sim:/processor/ms/dm/ram*/
+add wave -position end  sim:/processor/WRITE_BACK_DATA
+add wave -position end  sim:/processor/SP_INPUT
+add wave -position end  sim:/processor/wb/mem_out
+add wave -position 31  sim:/processor/wb/ALU_result*/

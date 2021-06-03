@@ -180,7 +180,7 @@ begin
 	IFID_INPUT(31 downto 0) <= in_port;
 	
 	-- decode
-	ds: decode_stage PORT MAP(clk, reset, '0', IFID_OUT(63 downto 32), IFID_OUT(31 downto 0),
+	ds: decode_stage PORT MAP(clk, reset, MEMWB_OUT(MEMWB_writeBackNext_IDX), IFID_OUT(63 downto 32), IFID_OUT(31 downto 0),
 	MEMWB_OUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX), WRITE_BACK_DATA, IFID_RdstRead, 
 	IFID_hasRsrc, IFID_Push, IFID_Pop, IFID_outPortEnable, IFID_writeBackNext, IFID_hasImm, 
 	IFID_SrcAndImm, IFID_memWrite, IFID_memRead, IFID_stdEnable, IFID_ALU_operation, IFID_imm,

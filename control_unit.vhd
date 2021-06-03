@@ -68,7 +68,7 @@ begin
 
 	-- ALU Operation
 	signals(17 downto 13) <= "00000" when opcode = "0100101" 						-- OUT
-	else "00001" when opcode = "1000000" or opcode = "0010010"						-- MOV, LDM
+	else "00001" when opcode = "1000000" or opcode = "0010010" or opcode = "0100110"		-- MOV, LDM, IN 
 	else "00010" when opcode = "1000001" or opcode = "1000101" or opcode = "0010011" or opcode = "0010100"	-- ADD, IADD, LDD, STD
 	else "00011" when opcode = "1000010"									-- SUB
 	else "00100" when opcode = "1000011"									-- AND
