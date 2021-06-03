@@ -3,7 +3,7 @@ LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.numeric_std.all;
 
-ENTITY fetch_stage IS
+ENTITY decode_stage IS
 	PORT(
 		clk, reset, writeBackNow: IN std_logic;
 		instruction, in_port: IN std_logic_vector(31 downto 0);
@@ -16,9 +16,9 @@ ENTITY fetch_stage IS
 		SrcRead, DstRead : OUT std_logic_vector (2 downto 0)
 	);
 
-END ENTITY fetch_stage;
+END ENTITY decode_stage;
 
-ARCHITECTURE fetch_stage_Arch OF fetch_stage IS
+ARCHITECTURE decode_stage_Arch OF decode_stage IS
 
 
 component control_unit is 
@@ -49,6 +49,7 @@ end component;
 BEGIN
 
 	cn : control_unit PORT MAP (instruction(31 downto 25),signals);
+
 	RdstRead <= signals(7) ;
 	hasRsrc <= signals(8) ;
 	Push <= signals(3);
@@ -73,4 +74,4 @@ BEGIN
 
 	
 
-END fetch_stage_Arch;
+END decode_stage_Arch;
