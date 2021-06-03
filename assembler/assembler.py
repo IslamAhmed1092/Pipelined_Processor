@@ -1,20 +1,108 @@
 import sys
 
-ram = [0]*1048576
+ram = [0] * 1048576
 
 instructions = {
-    "MOV": {'code': '0000', 'operands': '2'}, "ADD": {'code': '0001', 'operands': '2'}, "SUB": {'code': '0010', 'operands': '2'},
-    "AND": {'code': '0011', 'operands': '2'}, "OR": {'code': '0100', 'operands': '2'}, "IADD": {'code': '0101', 'operands': '2'},
-    "SHL": {'code': '0110', 'operands': '2'}, "SHR": {'code': '0111', 'operands': '2'},
-
-    "CLR": {'code': '0000', 'operands': '1'}, "NOT": {'code': '0001', 'operands': '1'}, "INC": {'code': '0010', 'operands': '1'},
-    "DEC": {'code': '0011', 'operands': '1'}, "NEG": {'code': '0100', 'operands': '1'}, "OUT": {'code': '0101', 'operands': '1'},
-    "IN": {'code': '0110', 'operands': '1'}, "RLC": {'code': '0111', 'operands': '1'}, "RRC": {'code': '1000', 'operands': '1'},
-
-    "NOP": {'code': '0000', 'operands': '0'}, "SETC": {'code': '0001', 'operands': '0'}, "CLRC": {'code': '0010', 'operands': '0'},
-
-    "PUSH": {'code': '0000', 'operands': '3'}, "POP": {'code': '0001', 'operands': '3'}, "LDM": {'code': '0010', 'operands': '3'},
-    "LDD": {'code': '0011', 'operands': '3'}, "STD": {'code': '0100', 'operands': '3'}
+    "MOV": {
+        'code': '0000',
+        'operands': '2'
+    },
+    "ADD": {
+        'code': '0001',
+        'operands': '2'
+    },
+    "SUB": {
+        'code': '0010',
+        'operands': '2'
+    },
+    "AND": {
+        'code': '0011',
+        'operands': '2'
+    },
+    "OR": {
+        'code': '0100',
+        'operands': '2'
+    },
+    "IADD": {
+        'code': '0101',
+        'operands': '2'
+    },
+    "SHL": {
+        'code': '0110',
+        'operands': '2'
+    },
+    "SHR": {
+        'code': '0111',
+        'operands': '2'
+    },
+    "CLR": {
+        'code': '0000',
+        'operands': '1'
+    },
+    "NOT": {
+        'code': '0001',
+        'operands': '1'
+    },
+    "INC": {
+        'code': '0010',
+        'operands': '1'
+    },
+    "DEC": {
+        'code': '0011',
+        'operands': '1'
+    },
+    "NEG": {
+        'code': '0100',
+        'operands': '1'
+    },
+    "OUT": {
+        'code': '0101',
+        'operands': '1'
+    },
+    "IN": {
+        'code': '0110',
+        'operands': '1'
+    },
+    "RLC": {
+        'code': '0111',
+        'operands': '1'
+    },
+    "RRC": {
+        'code': '1000',
+        'operands': '1'
+    },
+    "NOP": {
+        'code': '0000',
+        'operands': '0'
+    },
+    "SETC": {
+        'code': '0001',
+        'operands': '0'
+    },
+    "CLRC": {
+        'code': '0010',
+        'operands': '0'
+    },
+    "PUSH": {
+        'code': '0000',
+        'operands': '3'
+    },
+    "POP": {
+        'code': '0001',
+        'operands': '3'
+    },
+    "LDM": {
+        'code': '0010',
+        'operands': '3'
+    },
+    "LDD": {
+        'code': '0011',
+        'operands': '3'
+    },
+    "STD": {
+        'code': '0100',
+        'operands': '3'
+    }
 }
 
 registers = {
@@ -29,7 +117,7 @@ registers = {
 }
 
 
-def encode_hex(operand):
+def encode_hex(operand, fill):
     # code = ''
     # operand = int(operand)
     # if operand < 0:
@@ -37,7 +125,7 @@ def encode_hex(operand):
     # else:
     #     code = '0'*(16-len(bin(operand)[2:])) + bin(operand)[2:]
 
-    return bin(int(operand, 16))[2:].zfill(16)
+    return bin(int(operand, 16))[2:].zfill(fill)
 
 
 def cleanup(testcase):
@@ -47,20 +135,21 @@ def cleanup(testcase):
     inst_address = 0
     # Deletes all the comments, empty lines, and ORG instructions
     for line in testcase:
-        if(line == "\n"):
+        if (line == "\n"):
             continue
-        if(line[0] == "#"):
+        if (line[0] == "#"):
             continue
-        if(line[0] == "."):
+        if (line[0] == "."):
             location = int(line.split("#")[0].rstrip().split(" ")[1], 16)
-            if location == 0:
-                location += 1
             org_location = True
             continue
-        if(org_location):
+        if (org_location):
             org_location = False
-            if(line.rstrip("\n").isnumeric()):
-                ram[location] = encode_hex(line.rstrip("\n"))
+            if (line.rstrip("\n").isnumeric()):
+                address = encode_hex(line.rstrip("\n"), 32)
+                ram[location] = address[0:16]
+                ram[location + 1] = address[16:32]
+                location = location + 2
                 continue
             else:
                 inst_address = location
@@ -70,7 +159,7 @@ def cleanup(testcase):
 
 
 def process_nooperand(instruction):
-    return "000" + instructions[instruction]['code'] + '0'*9
+    return "000" + instructions[instruction]['code'] + '0' * 9
 
 
 def process_oneoperand(instruction):
@@ -99,7 +188,7 @@ def process_twooperand(instruction):
         code += registers[reg1] + bin(int(reg2, 16))[2:].zfill(5) + "0"
         return code, ""
 
-    reg2 = encode_hex(reg2)
+    reg2 = encode_hex(reg2, 16)
     if opcode == "0101":
         code += "000" + registers[reg1] + reg2 + "000"
         return code[:16], code[16:]
@@ -118,17 +207,17 @@ def process_memory(instruction):
     reg1, reg2 = regs.split(",")
 
     if opcode == "0010":
-        code += "000" + registers[reg1] + encode_hex(reg2) + "000"
+        code += "000" + registers[reg1] + encode_hex(reg2, 16) + "000"
 
     if opcode == "0011" or opcode == "0100":
         code += registers[reg2.split("(")[1][:-1]] + \
-            registers[reg1] + encode_hex(reg2.split("(")[0]) + "000"
+            registers[reg1] + encode_hex(reg2.split("(")[0],16) + "000"
 
     return code[:16], code[16:]
 
 
 testcase_filename = "Memory.asm"
-if(len(sys.argv) >= 2):
+if (len(sys.argv) >= 2):
     testcase_filename = sys.argv[1]
 
 testcase = open(testcase_filename)
@@ -157,15 +246,17 @@ for line in lines:
                 ram[inst_address] = second_word
         inst_address = inst_address + 1
 
-output_ram = open(testcase_filename.split(".")[0]+".mem", "+w")
+output_ram = open(testcase_filename.split(".")[0] + ".mem", "+w")
 
-output_ram.write("// memory data file (do not edit the following line - required for mem load use)\n// instance=/instruction_memory/ram\n// format=mti addressradix=h dataradix=b version=1.0 wordsperline=1\n")
+output_ram.write(
+    "// memory data file (do not edit the following line - required for mem load use)\n// instance=/instruction_memory/ram\n// format=mti addressradix=h dataradix=b version=1.0 wordsperline=1\n"
+)
 
 fmt = "%3s"
 for i, word in enumerate(ram):
     line_number = fmt % (hex(i)[2:])
     if word == 0:
-        output_ram.write(line_number+": 0000000000000000\n")
+        output_ram.write(line_number + ": 0000000000000000\n")
     else:
-        output_ram.write(line_number+": "+word+"\n")
+        output_ram.write(line_number + ": " + word + "\n")
 # print(ram)
