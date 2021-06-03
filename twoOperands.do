@@ -25,10 +25,10 @@ add wave -position end sim:/processor/es/Immediate_in
 add wave -position end  sim:/processor/es/ALU_Result
 add wave -position end  sim:/processor/es/CCR_OUT
 
-add wave -position end  sim:/processor/FORWARDING_WBdstA
-add wave -position end  sim:/processor/FORWARDING_MEMdstA
-add wave -position end  sim:/processor/FORWARDING_WBdstB
-add wave -position end  sim:/processor/FORWARDING_MEMdstB
+add wave -position end  sim:/processor/FORWARDING_WBdst
+add wave -position end  sim:/processor/FORWARDING_MEMdst
+add wave -position end  sim:/processor/FORWARDING_WBsrc
+add wave -position end  sim:/processor/FORWARDING_MEMsrc
 
 add wave -position end  sim:/processor/ms/ALU_Result
 

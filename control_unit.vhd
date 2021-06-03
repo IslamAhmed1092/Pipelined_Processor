@@ -30,8 +30,8 @@ begin
 	signals(4) <= '1' when opcode = "0010000" or opcode = "0010100"
 	else '0';
 
-	-- MemRead (POP, LDM, LDD)
-	signals(5) <= '1' when opcode = "0010001" or opcode = "0010010" or opcode = "0010011"
+	-- MemRead (POP, LDD)
+	signals(5) <= '1' when opcode = "0010001" or opcode = "0010011"
 	else '0';
 	
 	-- IsShift (SHL, SHR)
