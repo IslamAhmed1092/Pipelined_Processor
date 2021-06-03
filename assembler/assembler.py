@@ -1,6 +1,6 @@
 import sys
 
-ram = [0]*2048
+ram = [0]*1048576
 
 instructions = {
     "MOV": {'code': '0000', 'operands': '2'}, "ADD": {'code': '0001', 'operands': '2'}, "SUB": {'code': '0010', 'operands': '2'},

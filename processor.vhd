@@ -74,6 +74,13 @@ component memory_stage IS
 	);
 end component;
 
+component writeback_stage is Port(
+    push , memRead : in std_logic; 
+    SP_address, mem_out, ALU_result : in std_logic_vector(31 downto 0 ); 
+    WB_data , SP_data: out std_logic_vector(31 downto 0)  
+);
+end component; 
+
 -- Fetch Stage
 signal fetch_instruction_out: std_logic_vector(31 downto 0);
 
@@ -150,7 +157,7 @@ signal MEMWB_INPUT: std_logic_vector(102 downto 0);
 signal MEMWB_OUT: std_logic_vector(102 downto 0);
 
 constant MEMWB_outPortEnable_IDX 					: integer := 0;
-constant MEMWB_Pop_IDX 								: integer := 1;
+constant MEMWB_memRead_IDX 							: integer := 1;
 constant MEMWB_writeBackNext_IDX 					: integer := 2;
 constant MEMWB_Push_IDX 							: integer := 3;
 constant MEMWB_SP_ST_IDX							: integer := 4;
@@ -162,6 +169,8 @@ constant MEMWB_ALU_Result_END_IDX 					: integer := 99;
 constant MEMWB_DstNum_ST_IDX 						: integer := 100; 
 constant MEMWB_DstNum_END_IDX 						: integer := 102;
 
+-- write back 
+signal WRITE_BACK_DATA: std_logic_vector(31 downto 0); 
 begin
 	-- fetch
 	fs: fetch_stage PORT MAP(clk, reset, '0', fetch_instruction_out);
@@ -171,7 +180,8 @@ begin
 	IFID_INPUT(31 downto 0) <= in_port;
 	
 	-- decode
-	ds: decode_stage PORT MAP(clk, reset, '0', IFID_OUT(63 downto 32), IFID_OUT(31 downto 0), "000", (others => '0'), IFID_RdstRead, 
+	ds: decode_stage PORT MAP(clk, reset, '0', IFID_OUT(63 downto 32), IFID_OUT(31 downto 0),
+	MEMWB_OUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX), WRITE_BACK_DATA, IFID_RdstRead, 
 	IFID_hasRsrc, IFID_Push, IFID_Pop, IFID_outPortEnable, IFID_writeBackNext, IFID_hasImm, 
 	IFID_SrcAndImm, IFID_memWrite, IFID_memRead, IFID_stdEnable, IFID_ALU_operation, IFID_imm,
 	IFID_src, IFID_dst, IFID_SrcNum, IFID_DstNum);
@@ -233,7 +243,7 @@ begin
 	MEMWB: reg GENERIC MAP (103) port map(clk, reset, '1', '1', MEMWB_INPUT, MEMWB_OUT);
 
 	MEMWB_INPUT(MEMWB_outPortEnable_IDX) <= EXMEM_OUT(EXMEM_outPortEnable_IDX);
-	MEMWB_INPUT(MEMWB_Pop_IDX) <= EXMEM_OUT(EXMEM_Pop_IDX);
+	MEMWB_INPUT(MEMWB_memRead_IDX) <= EXMEM_OUT(EXMEM_memRead_IDX);
 	MEMWB_INPUT(MEMWB_writeBackNext_IDX) <= EXMEM_OUT(EXMEM_writeBackNext_IDX);
 	MEMWB_INPUT(MEMWB_Push_IDX) <= EXMEM_OUT(EXMEM_Push_IDX);
 	MEMWB_INPUT(MEMWB_SP_END_IDX downto MEMWB_SP_ST_IDX) <= EXMEM_SP;
@@ -241,6 +251,11 @@ begin
 	MEMWB_INPUT(MEMWB_ALU_Result_END_IDX downto MEMWB_ALU_Result_ST_IDX) <= EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX);
 	MEMWB_INPUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX) <= EXMEM_OUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX);
 
+	-- write back 
+	wb: writeback_stage port map (MEMWB_OUT(MEMWB_Push_IDX) , MEMWB_OUT(MEMWB_memRead_IDX),
+	MEMWB_OUT(MEMWB_SP_END_IDX downto MEMWB_SP_ST_IDX), 
+	MEMWB_OUT(MEMWB_MEM_OUT_END_IDX downto MEMWB_MEM_OUT_ST_IDX),
+	MEMWB_OUT(MEMWB_ALU_Result_END_IDX downto MEMWB_ALU_Result_ST_IDX), WRITE_BACK_DATA , SP_INPUT);
 	
 
 end processor_arch;

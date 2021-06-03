@@ -13,7 +13,7 @@ END ENTITY Instruction_Memory;
 
 ARCHITECTURE Instruction_Memory_Arch OF Instruction_Memory IS
 
-	TYPE ram_type IS ARRAY(0 TO 2047) OF std_logic_vector(15 DOWNTO 0);
+	TYPE ram_type IS ARRAY(0 TO 1048575) OF std_logic_vector(15 DOWNTO 0);
 
 	SIGNAL ram : ram_type ;
 	

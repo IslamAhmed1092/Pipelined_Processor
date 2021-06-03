@@ -1,4 +1,5 @@
 restart -f
+
 mem load -i assembler/Memory.mem /processor/fs/im/ram
 force -freeze sim:/processor/clk 0 0, 1 {50 ps} -r 100
 force -freeze sim:/processor/reset 1 0
