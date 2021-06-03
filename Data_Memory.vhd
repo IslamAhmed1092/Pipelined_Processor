@@ -21,7 +21,7 @@ ARCHITECTURE Data_Memory_Arch OF Data_Memory IS
 	BEGIN
 		PROCESS(clk) IS
 			BEGIN
-				IF rising_edge(clk) THEN  
+				IF falling_edge(clk) THEN  
 					IF writeEnable = '1' THEN
 						ram(to_integer(unsigned(address))) <= datain(31 downto 16);
 						ram(to_integer(unsigned(address))+1) <= datain(15 downto 0);

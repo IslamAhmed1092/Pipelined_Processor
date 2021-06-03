@@ -25,6 +25,12 @@ port (clk, rst ,en, edge :IN std_logic;
         q:out std_logic_vector(n-1 downto 0 )); 
 END component; 
 
+component stack_pointer is 
+generic (n:INTEGER:= 32); 
+port (clk, rst ,en, edge :IN std_logic; 
+        d:In std_logic_vector(n-1 downto 0); 
+        q:out std_logic_vector(n-1 downto 0 )); 
+END component; 
 
 component decode_stage IS
 	PORT(
@@ -53,6 +59,18 @@ component execution_stage IS
 		ALU_Result: OUT std_logic_vector(31 downto 0);
 		RdstData_out: OUT std_logic_vector(31 downto 0)
 		
+	);
+end component;
+
+component memory_stage IS
+	PORT(
+		clk, pop, push, Memory_Write, Memory_Read, STD_Enable: IN std_logic;
+		Rsrc_Data: in std_logic_vector(31 DOWNTO 0);
+		Rdst_Data: in std_logic_vector(31 DOWNTO 0);
+		ALU_Result: in std_logic_vector(31 DOWNTO 0);
+		SP_Addr_In: in std_logic_vector(31 DOWNTO 0);
+		SP_Addr_Out: out std_logic_vector(31 DOWNTO 0);
+		dataout : out std_logic_vector(31 DOWNTO 0)
 	);
 end component;
 
@@ -121,6 +139,28 @@ constant EXMEM_Dst_END_IDX 					: integer := 102;
 constant EXMEM_DstNum_ST_IDX 				: integer := 103; 
 constant EXMEM_DstNum_END_IDX 				: integer := 105;
 
+-- memory
+signal SP_INPUT: std_logic_vector(31 downto 0);
+signal SP_OUT: std_logic_vector(31 downto 0);
+
+signal EXMEM_SP: std_logic_vector(31 downto 0);
+signal EXMEM_MEM_OUT: std_logic_vector(31 downto 0);
+
+signal MEMWB_INPUT: std_logic_vector(102 downto 0);
+signal MEMWB_OUT: std_logic_vector(102 downto 0);
+
+constant MEMWB_outPortEnable_IDX 					: integer := 0;
+constant MEMWB_Pop_IDX 								: integer := 1;
+constant MEMWB_writeBackNext_IDX 					: integer := 2;
+constant MEMWB_Push_IDX 							: integer := 3;
+constant MEMWB_SP_ST_IDX							: integer := 4;
+constant MEMWB_SP_END_IDX							: integer := 35;
+constant MEMWB_MEM_OUT_ST_IDX 						: integer := 36;
+constant MEMWB_MEM_OUT_END_IDX 						: integer := 67;
+constant MEMWB_ALU_Result_ST_IDX 					: integer := 68; 
+constant MEMWB_ALU_Result_END_IDX 					: integer := 99;
+constant MEMWB_DstNum_ST_IDX 						: integer := 100; 
+constant MEMWB_DstNum_END_IDX 						: integer := 102;
 
 begin
 	-- fetch
@@ -181,5 +221,26 @@ begin
 	EXMEM_INPUT(EXMEM_Dst_END_IDX downto EXMEM_Dst_ST_IDX) <= IDEX_RdstData_out;
 	EXMEM_INPUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX) <= IDEX_OUT(IFID_DstNum_END_IDX downto IFID_DstNum_ST_IDX);
 
+
+	ms: memory_stage PORT MAP(clk, EXMEM_OUT(EXMEM_Pop_IDX), EXMEM_OUT(EXMEM_Push_IDX), EXMEM_OUT(EXMEM_memWrite_IDX),
+	EXMEM_OUT(EXMEM_memRead_IDX), EXMEM_OUT(EXMEM_stdEnable_IDX), EXMEM_OUT(EXMEM_Src_END_IDX downto EXMEM_Src_ST_IDX),
+	EXMEM_OUT(EXMEM_Dst_END_IDX downto EXMEM_Dst_ST_IDX), EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX),
+	SP_OUT, EXMEM_SP, EXMEM_MEM_OUT);
+
+	
+	SP: stack_pointer GENERIC MAP (32) port map(clk, reset, '1', '0', SP_INPUT, SP_OUT);
+	
+	MEMWB: reg GENERIC MAP (103) port map(clk, reset, '1', '1', MEMWB_INPUT, MEMWB_OUT);
+
+	MEMWB_INPUT(MEMWB_outPortEnable_IDX) <= EXMEM_OUT(EXMEM_outPortEnable_IDX);
+	MEMWB_INPUT(MEMWB_Pop_IDX) <= EXMEM_OUT(EXMEM_Pop_IDX);
+	MEMWB_INPUT(MEMWB_writeBackNext_IDX) <= EXMEM_OUT(EXMEM_writeBackNext_IDX);
+	MEMWB_INPUT(MEMWB_Push_IDX) <= EXMEM_OUT(EXMEM_Push_IDX);
+	MEMWB_INPUT(MEMWB_SP_END_IDX downto MEMWB_SP_ST_IDX) <= EXMEM_SP;
+	MEMWB_INPUT(MEMWB_MEM_OUT_END_IDX downto MEMWB_MEM_OUT_ST_IDX) <= EXMEM_MEM_OUT;
+	MEMWB_INPUT(MEMWB_ALU_Result_END_IDX downto MEMWB_ALU_Result_ST_IDX) <= EXMEM_OUT(EXMEM_ALU_Result_END_IDX downto EXMEM_ALU_Result_ST_IDX);
+	MEMWB_INPUT(MEMWB_DstNum_END_IDX downto MEMWB_DstNum_ST_IDX) <= EXMEM_OUT(EXMEM_DstNum_END_IDX downto EXMEM_DstNum_ST_IDX);
+
+	
 
 end processor_arch;
