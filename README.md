@@ -15,3 +15,4 @@ A 5-stage pipelined processor with a RISC-like instruction set architecture., Ha
 - Detection and stalling in case of Load-Use
 - Full Forwarding for Data Hazards
 - Two memories to solve Structural Hazards
+# Pipelined-processor
